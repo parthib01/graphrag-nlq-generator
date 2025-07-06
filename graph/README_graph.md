@@ -45,7 +45,7 @@ Creates relationships:
 How to Run
 Install Neo4j software (https://neo4j.com/download/neo4j-desktop/?edition=desktop&flavour=winstall64&release=2.0.1&offline=false)
 Open and Create Instance using the name "GrpahDB" and password as "Parthib@0103"
-Then in vs code run python load_graph.py, output: ✅ Knowledge graph loaded to Neo4j.
+Then in vs code run python load_graph.py, output: ✅ Knowledge graph loaded to Neo4j (make sure before this you have the retail.db file in your db folder)
 
 After that go to query and run the following cypher to check if it's working:
 Example Cypher Queries (Neo4j Browser)
