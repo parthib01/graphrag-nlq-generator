@@ -22,3 +22,6 @@ Thumbs.db
 # Logs and dumps
 *.log
 *.sqlite3
+
+# Ignore database files everywhere
+*.db
