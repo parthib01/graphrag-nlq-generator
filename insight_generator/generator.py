@@ -1,24 +1,19 @@
 import requests
 import json
+import os
+from dotenv import load_dotenv
+load_dotenv()
+# Read API key from environment variable
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Replace with your valid Gemini API key
-GEMINI_API_KEY = "AIzaSyCiity_vZcvn2PF8El9qvuAgd9lsx799c4"
+# Ensure key is present
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY not set. Please set it as an environment variable.")
 
-# Choose model: "gemini-1.5-flash" (fast) or "gemini-1.5-pro" (more powerful)
+# Choose model
 API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
 def generate_insight(user_query, sql_result):
-    """
-    Generates a natural language insight from SQL results using Gemini API.
-    
-    Args:
-        user_query (str): The original question from the user
-        sql_result (list of dicts): The SQL result rows
-        
-    Returns:
-        str: Natural language summary/insight
-    """
-
     result_text = json.dumps(sql_result, indent=2)
 
     prompt = f"""
@@ -49,13 +44,8 @@ Write a clear, concise, natural language summary of this result. Be brief but in
 
     try:
         response = requests.post(f"{API_URL}?key={GEMINI_API_KEY}", headers=headers, json=payload)
-        
-        # Optional: print raw response for debugging
-        print("\nRaw Response:\n")
-        print(response.text)
-
         if response.status_code != 200:
-            return f"Error from Gemini: {response.text}"
+            return f"Error from Gemini API: {response.text}"
 
         result = response.json()
         candidates = result.get("candidates", [])
