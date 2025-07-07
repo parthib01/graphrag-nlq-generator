@@ -1,51 +1,59 @@
 import streamlit as st
 import requests
 
-# Backend API Endpoint
-API_URL = "http://localhost:8000/query"
+# Backend API URL
+API_URL = "http://localhost:8000/ask"
 
-# Initialize session state for chat history 
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+st.set_page_config(page_title="GraphRAG Insight Generator", layout="wide")
 
-# Page Setup
-st.set_page_config(page_title="NLQ2SQL Chatbot", layout="centered")
-st.title("📊 NLQ to SQL Chatbot")
+st.markdown("<h1 style='font-size: 42px; color: #4CAF50;'>💬 InsightBuddy</h1>", unsafe_allow_html=True)
+st.markdown("### GraphRAG-based Natural Language Insight Generator")
 
 # Sidebar
 with st.sidebar:
     st.header("About")
-    st.write("This chatbot uses Gemini.")
+    st.write("This is an assistant that summarizes SQL query results for business users in simple English.")
     st.markdown("---")
     if st.button("Clear Chat"):
         st.session_state.chat_history = []
     st.markdown("---")
 
-# User Input Form
-with st.form("nlq_form", clear_on_submit=True):
-    user_query = st.text_input("Type your question here:", placeholder="e.g., What was the total sales last year?")
-    submitted = st.form_submit_button("Ask")
+# Initialize chat history in session
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
-# Submit Query to Backend and get response
-if submitted and user_query:
-    with st.spinner("Thinking..."):
-        try:
-            response = requests.post(API_URL, json={"query": user_query})
-            response.raise_for_status()
-            result = response.json()
-            bot_reply = result.get("insight", "No insight generated")
-        except Exception as e:
-            bot_reply = f"❌ Error: {str(e)}"
-    
-    # Insert latest message at the top            
-    st.session_state.chat_history.insert(0, {
-        "user": user_query,
-        "bot": bot_reply
-    })
+# Input
+user_query = st.text_input("💬 Enter your business question:", placeholder="e.g., Show total sales by category")
 
-# Display chat history (latest on top)
+if st.button("Ask"):
+    if user_query.strip() == "":
+        st.warning("Please enter a question.")
+    else:
+        with st.spinner("Generating response..."):
+            try:
+                res = requests.post(API_URL, json={"question": user_query})
+                if res.status_code == 200:
+                    data = res.json()
+
+                    # Store in chat history (latest on top)
+                    st.session_state.chat_history.insert(0, {
+                        "query": user_query,
+                        "sql": data.get("sql_query", ""),
+                        "insight": data.get("insight", ""),
+                        "output": data.get("output", [])
+                    })
+                else:
+                    st.error("❌ Server Error: " + res.text)
+            except Exception as e:
+                st.error(f"⚠️ Failed to connect to backend: {str(e)}")
+
+st.markdown("---")
+st.markdown("")
+# Show chat history
 for chat in st.session_state.chat_history:
-    with st.chat_message("user"):
-        st.markdown(chat["user"])
-    with st.chat_message("assistant"):
-        st.markdown(chat["bot"])
+    st.markdown(f"**Question:** {chat['query']}")
+    st.markdown(f"**SQL Query:** `{chat['sql']}`")
+    st.markdown("**Output Table:**")
+    st.dataframe(chat["output"], use_container_width=True)
+    st.markdown(f"**Insight:** _{chat['insight']}_")
+    st.markdown("---")
