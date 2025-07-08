@@ -96,7 +96,12 @@ def nlq_to_sql(question: str, retry: bool = True) -> str:
     return sql
 
 # ── 8.  Run SQL safely & retry once on error ─────────────────────────────────
-def run_sql(sql: str, question: str) -> Dict:
+def run_sql(sql: str, question: str, *, _has_retried: bool = False) -> Dict:
+    """
+    Execute SQL safely.
+    • If a syntax error occurs, ask Gemini to fix it **once**.
+    • If the second attempt still fails, return the error.
+    """
     try:
         cur = sql_conn.execute(sql)
         rows = [dict(r) for r in cur.fetchall()]
@@ -104,20 +109,26 @@ def run_sql(sql: str, question: str) -> Dict:
         return {"sql": sql, "columns": cols, "rows": rows, "error": None}
 
     except sqlite3.OperationalError as e:
-        if "syntax" in str(e).lower() and question:
-            if not hasattr(run_sql, "_retried"):
-                run_sql._retried = True  # flag to avoid infinite loop
-                # Ask Gemini to fix the query
-                fix_prompt = (
-                    f"The previous SQL gave the error:\n{e}\n"
-                    f"Please correct the query. Respond with SQL only."
-                )
-                fixed_sql = llm.invoke(fix_prompt).content.strip()
-                if fixed_sql.startswith("```"):
-                    fixed_sql = fixed_sql.split("```")[1].strip()
-                return run_sql(fixed_sql, question)
-        # Return error info if still failing
-        return {"sql": sql, "columns": [], "rows": [], "error": str(e)}
+        # Only retry once and only for syntax‑type errors
+        if (not _has_retried) and "syntax" in str(e).lower() and question:
+            fix_prompt = (
+                f"The previous SQL caused this SQLite error:\n{e}\n"
+                f"Please correct the query. Respond with SQL only."
+            )
+            fixed_sql = llm.invoke(fix_prompt).content.strip()
+            if fixed_sql.startswith("```"):
+                fixed_sql = fixed_sql.split("```")[1].strip()
+            # Retry exactly once
+            return run_sql(fixed_sql, question, _has_retried=True)
+
+        # Either we already retried or it's not a syntax error → return failure
+        return {
+            "sql": sql,
+            "columns": [],
+            "rows": [],
+            "error": str(e)
+        }
+
 
 # ── 9.  Full pipeline wrapper ────────────────────────────────────────────────
 def nlq_pipeline(question: str) -> Dict:
