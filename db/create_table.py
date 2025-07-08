@@ -9,7 +9,8 @@ conn.execute("PRAGMA foreign_keys = ON;")
 cursor = conn.cursor()
 
 # Drop tables if they exist (helps when running script multiple times)
-tables = ["Review", "OrderItem", "Orders", "Store", "Product", "Supplier", "Customer"]
+tables = ["Review", "OrderItem", "Orders", "Store", "Product", "Supplier", "Customer", "Payment",
+          "Shipment", "Inventory", "Promotion", "ProductPromotion", "Loyalty"]
 for tbl in tables:
     cursor.execute(f"DROP TABLE IF EXISTS {tbl};")
 
@@ -95,6 +96,82 @@ CREATE TABLE Review (
 );
 """)
 
+
+# 8. Payment table
+cursor.execute("""
+CREATE TABLE Payment (
+    payment_id     INTEGER PRIMARY KEY,
+    order_id       INTEGER NOT NULL,
+    payment_date   TEXT NOT NULL,
+    payment_method TEXT CHECK(payment_method IN ('Credit Card', 'Debit Card', 'UPI', 'Net Banking', 'Cash')),
+    amount         REAL NOT NULL CHECK (amount >= 0),
+    FOREIGN KEY (order_id) REFERENCES Orders(order_id)
+);
+""")
+
+# 9. Shipment table
+cursor.execute("""
+CREATE TABLE Shipment (
+    shipment_id     INTEGER PRIMARY KEY,
+    order_id        INTEGER NOT NULL,
+    shipment_date   TEXT NOT NULL,
+    delivery_date   TEXT,
+    delivery_status TEXT CHECK(delivery_status IN ('Pending', 'Shipped', 'Delivered', 'Returned')),
+    courier         TEXT,
+    tracking_number TEXT UNIQUE,
+    FOREIGN KEY (order_id) REFERENCES Orders(order_id)
+);
+""")
+
+
+# 10. Inventory table
+cursor.execute("""
+CREATE TABLE Inventory (
+    store_id     INTEGER NOT NULL,
+    product_id   INTEGER NOT NULL,
+    stock_level  INTEGER NOT NULL CHECK (stock_level >= 0),
+    last_updated TEXT,
+    PRIMARY KEY (store_id, product_id),
+    FOREIGN KEY (store_id) REFERENCES Store(store_id),
+    FOREIGN KEY (product_id) REFERENCES Product(product_id)
+);
+""")
+
+
+# 11. Promotion table
+cursor.execute("""
+CREATE TABLE Promotion (
+    promo_id     INTEGER PRIMARY KEY,
+    name         TEXT NOT NULL,
+    discount_pct REAL CHECK (discount_pct BETWEEN 0 AND 100),
+    start_date   TEXT NOT NULL,
+    end_date     TEXT NOT NULL
+);
+""")
+
+
+# 12. ProductPromotion table
+cursor.execute("""
+CREATE TABLE ProductPromotion (
+    product_id INTEGER NOT NULL,
+    promo_id   INTEGER NOT NULL,
+    PRIMARY KEY (product_id, promo_id),
+    FOREIGN KEY (product_id) REFERENCES Product(product_id),
+    FOREIGN KEY (promo_id)   REFERENCES Promotion(promo_id)
+);
+""")
+
+
+# 13. Loyalty table
+cursor.execute("""
+CREATE TABLE Loyalty (
+    customer_id    INTEGER PRIMARY KEY,
+    tier           TEXT CHECK(tier IN ('Silver', 'Gold', 'Platinum')),
+    points_balance INTEGER DEFAULT 0,
+    last_updated   TEXT,
+    FOREIGN KEY (customer_id) REFERENCES Customer(customer_id)
+);
+""")
 
 
 # Commit schema changes
