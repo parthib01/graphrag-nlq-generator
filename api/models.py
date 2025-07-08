@@ -12,3 +12,6 @@ class NLQResponse(BaseModel):
     output: List[Dict[str, Any]]    # rows from SQLite
     insight: str                    # Gemini summary
     error: Optional[str] = None     # populated only on failure
+
+
+#uvicorn api.main:app --reload --log-level debug
