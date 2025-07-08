@@ -54,7 +54,7 @@ for chat in st.session_state.chat_history:
     st.markdown("### Chat History")
     st.markdown("")
     st.markdown(f"**Question:** {chat['query']}")
-    st.markdown(f"**SQL Query:** `{chat['sql']}`")
+    #st.markdown(f"**SQL Query:** `{chat['sql']}`")
     st.markdown("**Output Table:**")
     st.dataframe(chat["output"], use_container_width=True)
     st.markdown(f"**Insight:** _{chat['insight']}_")
