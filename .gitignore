@@ -24,4 +24,4 @@ Thumbs.db
 *.sqlite3
 
 # Ignore database files everywhere
-*.db
+retail.db
