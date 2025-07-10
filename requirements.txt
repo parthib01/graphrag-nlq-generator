@@ -4,6 +4,7 @@ langchain-google-genai
 openai>=1.23.0
 google-generativeai>=0.3.2       # Only if you're using Gemini
 tiktoken>=0.5.1
+fuzzywuzzy[levenshtein]
 
 # Neo4j for Knowledge Graph
 neo4j>=5.17.0
